@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" id="htmlRoot">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VaultNote | Self-Destructing Notes</title>
+<meta name="description" content="VaultNote - ملاحظات مشفّرة تختفي بعد قراءة واحدة، بواسطة Y796.">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://*.upstash.io; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests">
+<style>
+  :root{
+    --bg:#0a0a0a;
+    --card:#141414;
+    --card-2:#1c1c1c;
+    --border:#2a2a2a;
+    --text:#ffffff;
+    --muted:#9a9a9a;
+    --accent-1:#f5a623;
+    --accent-2:#ff7a45;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Segoe UI', Tahoma, system-ui, -apple-system, sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding:24px 16px 40px;
+  }
+  .app{ width:100%; max-width:420px; }
+  .top-row{ display:flex; justify-content:flex-end; margin-bottom:28px; }
+  .lang-pill{
+    background:var(--card-2);
+    color:var(--muted);
+    border:1px solid var(--border);
+    border-radius:999px;
+    padding:8px 18px;
+    font-size:14px;
+    cursor:pointer;
+    user-select:none;
+  }
+  .lang-pill:hover{ color:var(--text); }
+  h1{
+    text-align:center;
+    font-size:40px;
+    font-weight:800;
+    margin:0 0 10px;
+    letter-spacing:0.5px;
+  }
+  .subtitle{
+    text-align:center;
+    color:var(--muted);
+    font-size:15px;
+    margin:0 0 28px;
+    line-height:1.6;
+  }
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:18px;
+    margin-bottom:20px;
+  }
+  textarea{
+    width:100%;
+    min-height:160px;
+    background:transparent;
+    border:none;
+    outline:none;
+    color:var(--text);
+    font-size:16px;
+    font-family:inherit;
+    resize:vertical;
+  }
+  textarea::placeholder{ color:#5a5a5a; }
+
+  .primary-btn{
+    width:100%;
+    background:#fff;
+    color:#000;
+    border:none;
+    border-radius:14px;
+    padding:18px 0;
+    font-size:17px;
+    font-weight:700;
+    cursor:pointer;
+    margin-bottom:20px;
+  }
+  .primary-btn:active{ transform:scale(0.99); }
+  .primary-btn:disabled{ opacity:0.5; cursor:default; }
+
+  .link-box{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:16px;
+    margin-bottom:16px;
+  }
+  .link-box input{
+    flex:1;
+    background:transparent;
+    border:none;
+    outline:none;
+    color:var(--text);
+    font-size:13px;
+    font-family:monospace;
+    direction:ltr;
+    text-align:left;
+    min-width:0;
+  }
+  .copy-btn{
+    background:var(--card-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:10px;
+    padding:9px 16px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+
+  .warn-box{
+    background:rgba(245,166,35,0.08);
+    border:1px solid rgba(245,166,35,0.35);
+    border-radius:14px;
+    padding:14px 16px;
+    font-size:13px;
+    color:#f5a623;
+    line-height:1.6;
+    margin-bottom:20px;
+  }
+
+  .reveal-area{
+    text-align:center;
+    padding:20px 0;
+  }
+  .reveal-icon{
+    width:56px;
+    height:56px;
+    margin:0 auto 18px;
+    border-radius:50%;
+    background:var(--card);
+    border:1px solid var(--border);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .note-text{
+    white-space:pre-wrap;
+    word-break:break-word;
+    text-align:right;
+    font-size:16px;
+    line-height:1.7;
+    padding:4px 2px;
+  }
+  .burned-msg{
+    color:var(--muted);
+    font-size:13px;
+    text-align:center;
+    margin-top:14px;
+  }
+  .status-msg{
+    color:var(--muted);
+    font-size:14px;
+    text-align:center;
+    line-height:1.7;
+    padding:20px 0;
+  }
+
+  hr{ border:none; border-top:1px solid var(--border); margin:0 0 24px; }
+  .footer-icons{ display:flex; justify-content:center; gap:22px; margin-bottom:14px; }
+  .footer-icons a{ color:var(--muted); display:flex; }
+  .footer-icons a:hover{ color:var(--text); }
+  .footer-icons svg{ width:20px; height:20px; }
+  .made-by{ text-align:center; color:#5a5a5a; font-size:12px; letter-spacing:2px; font-weight:600; }
+
+  .toast{
+    position:fixed;
+    bottom:28px;
+    left:50%;
+    transform:translateX(-50%) translateY(20px);
+    background:#fff;
+    color:#000;
+    padding:10px 20px;
+    border-radius:999px;
+    font-size:14px;
+    font-weight:600;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s ease, transform .2s ease;
+    white-space:nowrap;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .hidden{ display:none !important; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top-row">
+    <div class="lang-pill" id="langToggle">English</div>
+  </div>
+
+  <h1>VaultNote</h1>
+  <p class="subtitle" id="subtitle">اكتب رسالة، تولّد رابط سري، وتختفي للأبد أول ما حد يفتحه.</p>
+
+  <!-- Config warning (shown only if keys are not set yet) -->
+  <div id="configWarning" class="warn-box hidden"></div>
+
+  <!-- Compose view -->
+  <div id="composeView">
+    <div class="card">
+      <textarea id="noteInput" placeholder="اكتب رسالتك السرية هنا..."></textarea>
+    </div>
+    <button class="primary-btn" id="createBtn">إنشاء رابط سري</button>
+  </div>
+
+  <!-- Link result view -->
+  <div id="linkView" class="hidden">
+    <div class="warn-box" id="linkWarn">احفظ هذا الرابط الآن — ما راح يظهر لك مرة ثانية، وأول ما حد يفتحه يحذف للأبد.</div>
+    <div class="link-box">
+      <input type="text" id="resultLink" readonly>
+      <button class="copy-btn" id="copyBtn">نسخ</button>
+    </div>
+    <button class="primary-btn" id="newNoteBtn" style="background:var(--card-2); color:var(--text); border:1px solid var(--border);">إنشاء ملاحظة ثانية</button>
+  </div>
+
+  <!-- Reveal view (someone opened a note link) -->
+  <div id="revealView" class="hidden">
+    <div class="reveal-area" id="revealPrompt">
+      <div class="reveal-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
+      </div>
+      <p class="status-msg" id="revealHint">هذي رسالة سرية مشفّرة. اضغط الزر تحت للكشف عنها — بمجرد الكشف، تُحذف للأبد.</p>
+      <button class="primary-btn" id="revealBtn">كشف الرسالة</button>
+    </div>
+
+    <div id="revealResult" class="hidden">
+      <div class="card">
+        <div class="note-text" id="noteText"></div>
+      </div>
+      <p class="burned-msg" id="burnedMsg">🔥 تم حرق هذي الرسالة، ما راح تكون متاحة مرة ثانية لأي حد.</p>
+    </div>
+
+    <div id="revealError" class="hidden">
+      <p class="status-msg" id="errorMsg">هذا الرابط غير صالح، أو انفتح من قبل، أو انتهت صلاحيته.</p>
+    </div>
+  </div>
+
+  <hr>
+
+  <div class="footer-icons">
+    <a href="mailto:2800.XGB@proton.me" aria-label="Email">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 6l10 7L22 6"/></svg>
+    </a>
+  </div>
+  <p class="made-by">MADE BY Y796</p>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   ضع بيانات مشروعك من Upstash هنا بس (تبويب REST API):
+   ============================================================ */
+const UPSTASH_URL = 'PASTE_YOUR_UPSTASH_REST_URL_HERE';
+const UPSTASH_TOKEN = 'PASTE_YOUR_UPSTASH_REST_TOKEN_HERE';
+/* ============================================================ */
+
+const UPSTASH_CONFIGURED =
+  UPSTASH_URL !== 'PASTE_YOUR_UPSTASH_REST_URL_HERE' &&
+  UPSTASH_TOKEN !== 'PASTE_YOUR_UPSTASH_REST_TOKEN_HERE' &&
+  UPSTASH_URL.startsWith('http');
+
+const NOTE_TTL_SECONDS = 60 * 60 * 24 * 7; // safety net: unread notes auto-expire after 7 days
+
+const toast = document.getElementById('toast');
+const langToggle = document.getElementById('langToggle');
+const htmlRoot = document.getElementById('htmlRoot');
+
+const composeView = document.getElementById('composeView');
+const linkView = document.getElementById('linkView');
+const revealView = document.getElementById('revealView');
+const noteInput = document.getElementById('noteInput');
+const createBtn = document.getElementById('createBtn');
+const resultLink = document.getElementById('resultLink');
+const copyBtn = document.getElementById('copyBtn');
+const newNoteBtn = document.getElementById('newNoteBtn');
+
+const revealPrompt = document.getElementById('revealPrompt');
+const revealBtn = document.getElementById('revealBtn');
+const revealResult = document.getElementById('revealResult');
+const revealError = document.getElementById('revealError');
+const noteText = document.getElementById('noteText');
+
+let currentLang = 'ar';
+
+const dict = {
+  ar: {
+    subtitle: 'اكتب رسالة، تولّد رابط سري، وتختفي للأبد أول ما حد يفتحه.',
+    placeholder: 'اكتب رسالتك السرية هنا...',
+    createBtn: 'إنشاء رابط سري',
+    creating: 'جاري الإنشاء...',
+    linkWarn: 'احفظ هذا الرابط الآن — ما راح يظهر لك مرة ثانية، وأول ما حد يفتحه يحذف للأبد.',
+    copy: 'نسخ',
+    copied: 'تم النسخ',
+    newNote: 'إنشاء ملاحظة ثانية',
+    revealHint: 'هذي رسالة سرية مشفّرة. اضغط الزر تحت للكشف عنها — بمجرد الكشف، تُحذف للأبد.',
+    revealBtn: 'كشف الرسالة',
+    revealing: 'جاري الكشف...',
+    burnedMsg: '🔥 تم حرق هذي الرسالة، ما راح تكون متاحة مرة ثانية لأي حد.',
+    errorMsg: 'هذا الرابط غير صالح، أو انفتح من قبل، أو انتهت صلاحيته.',
+    toastEmpty: 'اكتب رسالة أولاً',
+    toastConfigError: 'الموقع لسا ما تربط بحساب Upstash.',
+    configNotSet: '⚠️ الموقع لسا ما اتربط بحساب Upstash. عدّل UPSTASH_URL وUPSTASH_TOKEN بأول الكود عشان يشتغل.',
+    langPill: 'English'
+  },
+  en: {
+    subtitle: 'Write a message, get a secret link, and it self-destructs the moment someone opens it.',
+    placeholder: 'Write your secret message here...',
+    createBtn: 'Create secret link',
+    creating: 'Creating...',
+    linkWarn: "Save this link now — you won't see it again, and it will be deleted forever the moment someone opens it.",
+    copy: 'Copy',
+    copied: 'Copied',
+    newNote: 'Create another note',
+    revealHint: "This is an encrypted secret message. Tap below to reveal it — once revealed, it's gone forever.",
+    revealBtn: 'Reveal message',
+    revealing: 'Revealing...',
+    burnedMsg: '🔥 This message has been burned and will never be available again.',
+    errorMsg: 'This link is invalid, already opened, or expired.',
+    toastEmpty: 'Write a message first',
+    toastConfigError: 'This site is not connected to an Upstash project yet.',
+    configNotSet: '⚠️ This site is not connected to Upstash yet. Edit UPSTASH_URL and UPSTASH_TOKEN at the top of the code for it to work.',
+    langPill: 'العربية'
+  }
+};
+
+function applyLang(){
+  const t = dict[currentLang];
+  document.getElementById('subtitle').textContent = t.subtitle;
+  noteInput.placeholder = t.placeholder;
+  createBtn.textContent = t.createBtn;
+  document.getElementById('linkWarn').textContent = t.linkWarn;
+  copyBtn.textContent = t.copy;
+  newNoteBtn.textContent = t.newNote;
+  document.getElementById('revealHint').textContent = t.revealHint;
+  revealBtn.textContent = t.revealBtn;
+  document.getElementById('burnedMsg').textContent = t.burnedMsg;
+  document.getElementById('errorMsg').textContent = t.errorMsg;
+  langToggle.textContent = t.langPill;
+  htmlRoot.setAttribute('lang', currentLang);
+  htmlRoot.setAttribute('dir', currentLang === 'ar' ? 'rtl' : 'ltr');
+
+  const configWarning = document.getElementById('configWarning');
+  if(!UPSTASH_CONFIGURED){
+    configWarning.textContent = t.configNotSet;
+    configWarning.classList.remove('hidden');
+  } else {
+    configWarning.classList.add('hidden');
+  }
+}
+
+langToggle.addEventListener('click', () => {
+  currentLang = currentLang === 'ar' ? 'en' : 'ar';
+  applyLang();
+});
+
+function showToast(msg){
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 1800);
+}
+
+/* ---------- base64url helpers ---------- */
+function bufToB64url(buf){
+  const bytes = new Uint8Array(buf);
+  let bin = '';
+  for(let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function b64urlToBuf(str){
+  str = str.replace(/-/g, '+').replace(/_/g, '/');
+  while(str.length % 4) str += '=';
+  const bin = atob(str);
+  const bytes = new Uint8Array(bin.length);
+  for(let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes.buffer;
+}
+
+/* ---------- encryption (client-side, key never touches the server) ---------- */
+async function encryptText(plaintext){
+  const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt']);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const encoded = new TextEncoder().encode(plaintext);
+  const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoded);
+  const rawKey = await crypto.subtle.exportKey('raw', key);
+  return {
+    payload: JSON.stringify({ iv: bufToB64url(iv), ct: bufToB64url(ciphertext) }),
+    keyB64: bufToB64url(rawKey)
+  };
+}
+
+async function decryptText(payloadJson, keyB64){
+  const { iv, ct } = JSON.parse(payloadJson);
+  const rawKey = b64urlToBuf(keyB64);
+  const key = await crypto.subtle.importKey('raw', rawKey, { name: 'AES-GCM' }, false, ['decrypt']);
+  const plainBuf = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64urlToBuf(iv) }, key, b64urlToBuf(ct));
+  return new TextDecoder().decode(plainBuf);
+}
+
+/* ---------- Upstash REST calls ---------- */
+async function upstashSet(key, value, exSeconds){
+  const res = await fetch(`${UPSTASH_URL}/set/${encodeURIComponent(key)}?EX=${exSeconds}`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${UPSTASH_TOKEN}` },
+    body: value
+  });
+  const data = await res.json();
+  return data.result === 'OK';
+}
+
+async function upstashGetDel(key){
+  const res = await fetch(`${UPSTASH_URL}/getdel/${encodeURIComponent(key)}`, {
+    headers: { 'Authorization': `Bearer ${UPSTASH_TOKEN}` }
+  });
+  const data = await res.json();
+  return data.result; // string, or null if missing/already read
+}
+
+/* ---------- Compose flow ---------- */
+createBtn.addEventListener('click', async () => {
+  const t = dict[currentLang];
+  const text = noteInput.value.trim();
+  if(!text){ showToast(t.toastEmpty); return; }
+
+  if(!UPSTASH_CONFIGURED){
+    showToast(t.toastConfigError);
+    return;
+  }
+
+  createBtn.disabled = true;
+  createBtn.textContent = t.creating;
+
+  try {
+    const { payload, keyB64 } = await encryptText(text);
+    const id = crypto.randomUUID();
+    const ok = await upstashSet(id, payload, NOTE_TTL_SECONDS);
+
+    if(!ok) throw new Error('store failed');
+
+    const link = `${location.origin}${location.pathname}#${id}.${keyB64}`;
+    resultLink.value = link;
+    composeView.classList.add('hidden');
+    linkView.classList.remove('hidden');
+    noteInput.value = '';
+  } catch(e){
+    showToast('حصل خطأ، جرب مرة ثانية');
+  } finally {
+    createBtn.disabled = false;
+    createBtn.textContent = t.createBtn;
+  }
+});
+
+copyBtn.addEventListener('click', async () => {
+  const t = dict[currentLang];
+  try {
+    await navigator.clipboard.writeText(resultLink.value);
+  } catch(e){
+    resultLink.select();
+    document.execCommand('copy');
+  }
+  showToast(t.copied);
+});
+
+newNoteBtn.addEventListener('click', () => {
+  linkView.classList.add('hidden');
+  composeView.classList.remove('hidden');
+  history.replaceState(null, '', location.pathname);
+});
+
+/* ---------- Reveal flow ---------- */
+function parseHash(){
+  const hash = location.hash.replace(/^#/, '');
+  const dotIdx = hash.indexOf('.');
+  if(dotIdx === -1) return null;
+  return { id: hash.slice(0, dotIdx), key: hash.slice(dotIdx + 1) };
+}
+
+const hashData = parseHash();
+if(hashData){
+  composeView.classList.add('hidden');
+  revealView.classList.remove('hidden');
+
+  revealBtn.addEventListener('click', async () => {
+    const t = dict[currentLang];
+    if(!UPSTASH_CONFIGURED){
+      showToast(t.toastConfigError);
+      return;
+    }
+    revealBtn.disabled = true;
+    revealBtn.textContent = t.revealing;
+
+    try {
+      const payload = await upstashGetDel(hashData.id);
+      if(!payload){
+        revealPrompt.classList.add('hidden');
+        revealError.classList.remove('hidden');
+        return;
+      }
+      const plaintext = await decryptText(payload, hashData.key);
+      noteText.textContent = plaintext;
+      revealPrompt.classList.add('hidden');
+      revealResult.classList.remove('hidden');
+    } catch(e){
+      revealPrompt.classList.add('hidden');
+      revealError.classList.remove('hidden');
+    }
+  });
+}
+
+applyLang();
+</script>
+</body>
+</html>

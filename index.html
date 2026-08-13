@@ -6,7 +6,26 @@
 <title>VaultNote | Self-Destructing Notes</title>
 <meta name="description" content="VaultNote - ملاحظات مشفّرة تختفي بعد قراءة واحدة، بواسطة Y796.">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://*.upstash.io; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests">
+
+<!-- Open Graph -->
+<meta property="og:title" content="VaultNote | Self-Destructing Notes">
+<meta property="og:description" content="ملاحظات مشفّرة تختفي بعد قراءة واحدة، بواسطة Y796.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://wr-7770.github.io/vaultnote/">
+<meta property="og:site_name" content="Vault">
+<meta property="og:image" content="https://wr-7770.github.io/vaultnote/og-image-note.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="VaultNote | Self-Destructing Notes">
+<meta name="twitter:description" content="ملاحظات مشفّرة تختفي بعد قراءة واحدة، بواسطة Y796.">
+<meta name="twitter:image" content="https://wr-7770.github.io/vaultnote/og-image-note.png">
+
+<!-- Favicon -->
+<link rel="icon" type="image/svg+xml" href="https://wr-7770.github.io/favicon.svg">
+
+<!-- لا حاجة لأي اتصال خارجي — كل شي يصير محليًا داخل المتصفح -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests">
 <style>
   :root{
     --bg:#0a0a0a;
@@ -207,10 +226,7 @@
   </div>
 
   <h1>VaultNote</h1>
-  <p class="subtitle" id="subtitle">اكتب رسالة، تولّد رابط سري، وتختفي للأبد أول ما حد يفتحه.</p>
-
-  <!-- Config warning (shown only if keys are not set yet) -->
-  <div id="configWarning" class="warn-box hidden"></div>
+  <p class="subtitle" id="subtitle">اكتب رسالة، تولّد رابط سري، وتختفي أول ما حد يفتحه من نفس الجهاز.</p>
 
   <!-- Compose view -->
   <div id="composeView">
@@ -222,7 +238,7 @@
 
   <!-- Link result view -->
   <div id="linkView" class="hidden">
-    <div class="warn-box" id="linkWarn">احفظ هذا الرابط الآن — ما راح يظهر لك مرة ثانية، وأول ما حد يفتحه يحذف للأبد.</div>
+    <div class="warn-box" id="linkWarn">احفظ هذا الرابط الآن — الرسالة نفسها مخزّنة داخل الرابط بشكل مشفّر، وما تُحفظ بأي سيرفر.</div>
     <div class="link-box">
       <input type="text" id="resultLink" readonly>
       <button class="copy-btn" id="copyBtn">نسخ</button>
@@ -236,7 +252,7 @@
       <div class="reveal-icon">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
       </div>
-      <p class="status-msg" id="revealHint">هذي رسالة سرية مشفّرة. اضغط الزر تحت للكشف عنها — بمجرد الكشف، تُحذف للأبد.</p>
+      <p class="status-msg" id="revealHint">هذي رسالة سرية مشفّرة. اضغط الزر تحت للكشف عنها — بعدها تنعلّم كمقروءة على هذا الجهاز.</p>
       <button class="primary-btn" id="revealBtn">كشف الرسالة</button>
     </div>
 
@@ -244,11 +260,11 @@
       <div class="card">
         <div class="note-text" id="noteText"></div>
       </div>
-      <p class="burned-msg" id="burnedMsg">🔥 تم حرق هذي الرسالة، ما راح تكون متاحة مرة ثانية لأي حد.</p>
+      <p class="burned-msg" id="burnedMsg">🔥 تم حرق هذي الرسالة على هذا الجهاز، ما راح تقدر تفتحها مرة ثانية من نفس المتصفح.</p>
     </div>
 
     <div id="revealError" class="hidden">
-      <p class="status-msg" id="errorMsg">هذا الرابط غير صالح، أو انفتح من قبل، أو انتهت صلاحيته.</p>
+      <p class="status-msg" id="errorMsg">هذا الرابط غير صالح، أو تم فتحه وحرقه من قبل على هذا الجهاز.</p>
     </div>
   </div>
 
@@ -265,19 +281,12 @@
 <div class="toast" id="toast"></div>
 
 <script>
-/* ============================================================
-   ضع بيانات مشروعك من Upstash هنا بس (تبويب REST API):
-   ============================================================ */
-const UPSTASH_URL = 'https://amused-tahr-120603.upstash.io';
-const UPSTASH_TOKEN = 'gQAAAAAAAdcbAAIgcDJkY2YyNWI5ZjRjNWU0ZmI3OWFmMDQzMDM5OTk5OWVkNg';
-/* ============================================================ */
-
-const UPSTASH_CONFIGURED =
-  UPSTASH_URL !== 'PASTE_YOUR_UPSTASH_REST_URL_HERE' &&
-  UPSTASH_TOKEN !== 'PASTE_YOUR_UPSTASH_REST_TOKEN_HERE' &&
-  UPSTASH_URL.startsWith('http');
-
-const NOTE_TTL_SECONDS = 60 * 60 * 24 * 7; // safety net: unread notes auto-expire after 7 days
+/*
+  VaultNote — نسخة بدون سيرفر خارجي.
+  الرسالة تُشفّر وتُحط بالكامل داخل الرابط (بعد #). ما فيه اتصال بأي خدمة خارجية.
+  "الحرق بعد القراءة" يُسجَّل محليًا (localStorage) على نفس الجهاز فقط —
+  لأنه ما فيه سيرفر مركزي يقدر يمنع فتح نفس الرابط من جهاز ثاني.
+*/
 
 const toast = document.getElementById('toast');
 const langToggle = document.getElementById('langToggle');
@@ -302,41 +311,37 @@ let currentLang = 'ar';
 
 const dict = {
   ar: {
-    subtitle: 'اكتب رسالة، تولّد رابط سري، وتختفي للأبد أول ما حد يفتحه.',
+    subtitle: 'اكتب رسالة، تولّد رابط سري، وتختفي أول ما حد يفتحه من نفس الجهاز.',
     placeholder: 'اكتب رسالتك السرية هنا...',
     createBtn: 'إنشاء رابط سري',
     creating: 'جاري الإنشاء...',
-    linkWarn: 'احفظ هذا الرابط الآن — ما راح يظهر لك مرة ثانية، وأول ما حد يفتحه يحذف للأبد.',
+    linkWarn: 'احفظ هذا الرابط الآن — الرسالة نفسها مخزّنة داخل الرابط بشكل مشفّر، وما تُحفظ بأي سيرفر.',
     copy: 'نسخ',
     copied: 'تم النسخ',
     newNote: 'إنشاء ملاحظة ثانية',
-    revealHint: 'هذي رسالة سرية مشفّرة. اضغط الزر تحت للكشف عنها — بمجرد الكشف، تُحذف للأبد.',
+    revealHint: 'هذي رسالة سرية مشفّرة. اضغط الزر تحت للكشف عنها — بعدها تنعلّم كمقروءة على هذا الجهاز.',
     revealBtn: 'كشف الرسالة',
     revealing: 'جاري الكشف...',
-    burnedMsg: '🔥 تم حرق هذي الرسالة، ما راح تكون متاحة مرة ثانية لأي حد.',
-    errorMsg: 'هذا الرابط غير صالح، أو انفتح من قبل، أو انتهت صلاحيته.',
+    burnedMsg: '🔥 تم حرق هذي الرسالة على هذا الجهاز، ما راح تقدر تفتحها مرة ثانية من نفس المتصفح.',
+    errorMsg: 'هذا الرابط غير صالح، أو تم فتحه وحرقه من قبل على هذا الجهاز.',
     toastEmpty: 'اكتب رسالة أولاً',
-    toastConfigError: 'الموقع لسا ما تربط بحساب Upstash.',
-    configNotSet: '⚠️ الموقع لسا ما اتربط بحساب Upstash. عدّل UPSTASH_URL وUPSTASH_TOKEN بأول الكود عشان يشتغل.',
     langPill: 'English'
   },
   en: {
-    subtitle: 'Write a message, get a secret link, and it self-destructs the moment someone opens it.',
+    subtitle: 'Write a message, get a secret link, and it self-destructs the moment it is opened on this device.',
     placeholder: 'Write your secret message here...',
     createBtn: 'Create secret link',
     creating: 'Creating...',
-    linkWarn: "Save this link now — you won't see it again, and it will be deleted forever the moment someone opens it.",
+    linkWarn: 'Save this link now — the message itself is encrypted inside the link, and is never stored on any server.',
     copy: 'Copy',
     copied: 'Copied',
     newNote: 'Create another note',
-    revealHint: "This is an encrypted secret message. Tap below to reveal it — once revealed, it's gone forever.",
+    revealHint: 'This is an encrypted secret message. Tap below to reveal it — it will then be marked as read on this device.',
     revealBtn: 'Reveal message',
     revealing: 'Revealing...',
-    burnedMsg: '🔥 This message has been burned and will never be available again.',
-    errorMsg: 'This link is invalid, already opened, or expired.',
+    burnedMsg: '🔥 This message has been burned on this device and cannot be opened again from the same browser.',
+    errorMsg: 'This link is invalid, or was already opened and burned on this device.',
     toastEmpty: 'Write a message first',
-    toastConfigError: 'This site is not connected to an Upstash project yet.',
-    configNotSet: '⚠️ This site is not connected to Upstash yet. Edit UPSTASH_URL and UPSTASH_TOKEN at the top of the code for it to work.',
     langPill: 'العربية'
   }
 };
@@ -356,14 +361,6 @@ function applyLang(){
   langToggle.textContent = t.langPill;
   htmlRoot.setAttribute('lang', currentLang);
   htmlRoot.setAttribute('dir', currentLang === 'ar' ? 'rtl' : 'ltr');
-
-  const configWarning = document.getElementById('configWarning');
-  if(!UPSTASH_CONFIGURED){
-    configWarning.textContent = t.configNotSet;
-    configWarning.classList.remove('hidden');
-  } else {
-    configWarning.classList.add('hidden');
-  }
 }
 
 langToggle.addEventListener('click', () => {
@@ -393,7 +390,7 @@ function b64urlToBuf(str){
   return bytes.buffer;
 }
 
-/* ---------- encryption (client-side, key never touches the server) ---------- */
+/* ---------- encryption (fully client-side, key + ciphertext both live in the link) ---------- */
 async function encryptText(plaintext){
   const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt']);
   const iv = crypto.getRandomValues(new Uint8Array(12));
@@ -401,36 +398,36 @@ async function encryptText(plaintext){
   const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoded);
   const rawKey = await crypto.subtle.exportKey('raw', key);
   return {
-    payload: JSON.stringify({ iv: bufToB64url(iv), ct: bufToB64url(ciphertext) }),
+    ivB64: bufToB64url(iv),
+    ctB64: bufToB64url(ciphertext),
     keyB64: bufToB64url(rawKey)
   };
 }
 
-async function decryptText(payloadJson, keyB64){
-  const { iv, ct } = JSON.parse(payloadJson);
+async function decryptText(ivB64, ctB64, keyB64){
   const rawKey = b64urlToBuf(keyB64);
   const key = await crypto.subtle.importKey('raw', rawKey, { name: 'AES-GCM' }, false, ['decrypt']);
-  const plainBuf = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64urlToBuf(iv) }, key, b64urlToBuf(ct));
+  const plainBuf = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: b64urlToBuf(ivB64) },
+    key,
+    b64urlToBuf(ctB64)
+  );
   return new TextDecoder().decode(plainBuf);
 }
 
-/* ---------- Upstash REST calls ---------- */
-async function upstashSet(key, value, exSeconds){
-  const res = await fetch(`${UPSTASH_URL}/set/${encodeURIComponent(key)}?EX=${exSeconds}`, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${UPSTASH_TOKEN}` },
-    body: value
-  });
-  const data = await res.json();
-  return data.result === 'OK';
+/* ---------- local "burned" tracking (per-device only) ---------- */
+function isBurned(noteId){
+  return localStorage.getItem('vaultnote_burned_' + noteId) === '1';
+}
+function markBurned(noteId){
+  localStorage.setItem('vaultnote_burned_' + noteId, '1');
 }
 
-async function upstashGetDel(key){
-  const res = await fetch(`${UPSTASH_URL}/getdel/${encodeURIComponent(key)}`, {
-    headers: { 'Authorization': `Bearer ${UPSTASH_TOKEN}` }
-  });
-  const data = await res.json();
-  return data.result; // string, or null if missing/already read
+/* simple hash of the ciphertext to use as a local note id */
+async function hashId(str){
+  const enc = new TextEncoder().encode(str);
+  const digest = await crypto.subtle.digest('SHA-256', enc);
+  return bufToB64url(digest).slice(0, 16);
 }
 
 /* ---------- Compose flow ---------- */
@@ -439,22 +436,12 @@ createBtn.addEventListener('click', async () => {
   const text = noteInput.value.trim();
   if(!text){ showToast(t.toastEmpty); return; }
 
-  if(!UPSTASH_CONFIGURED){
-    showToast(t.toastConfigError);
-    return;
-  }
-
   createBtn.disabled = true;
   createBtn.textContent = t.creating;
 
   try {
-    const { payload, keyB64 } = await encryptText(text);
-    const id = crypto.randomUUID();
-    const ok = await upstashSet(id, payload, NOTE_TTL_SECONDS);
-
-    if(!ok) throw new Error('store failed');
-
-    const link = `${location.origin}${location.pathname}#${id}.${keyB64}`;
+    const { ivB64, ctB64, keyB64 } = await encryptText(text);
+    const link = `${location.origin}${location.pathname}#${ivB64}.${ctB64}.${keyB64}`;
     resultLink.value = link;
     composeView.classList.add('hidden');
     linkView.classList.remove('hidden');
@@ -487,9 +474,10 @@ newNoteBtn.addEventListener('click', () => {
 /* ---------- Reveal flow ---------- */
 function parseHash(){
   const hash = location.hash.replace(/^#/, '');
-  const dotIdx = hash.indexOf('.');
-  if(dotIdx === -1) return null;
-  return { id: hash.slice(0, dotIdx), key: hash.slice(dotIdx + 1) };
+  const parts = hash.split('.');
+  if(parts.length !== 3) return null;
+  const [ivB64, ctB64, keyB64] = parts;
+  return { ivB64, ctB64, keyB64 };
 }
 
 const hashData = parseHash();
@@ -497,30 +485,29 @@ if(hashData){
   composeView.classList.add('hidden');
   revealView.classList.remove('hidden');
 
-  revealBtn.addEventListener('click', async () => {
-    const t = dict[currentLang];
-    if(!UPSTASH_CONFIGURED){
-      showToast(t.toastConfigError);
-      return;
-    }
-    revealBtn.disabled = true;
-    revealBtn.textContent = t.revealing;
-
-    try {
-      const payload = await upstashGetDel(hashData.id);
-      if(!payload){
-        revealPrompt.classList.add('hidden');
-        revealError.classList.remove('hidden');
-        return;
-      }
-      const plaintext = await decryptText(payload, hashData.key);
-      noteText.textContent = plaintext;
-      revealPrompt.classList.add('hidden');
-      revealResult.classList.remove('hidden');
-    } catch(e){
+  hashId(hashData.ctB64).then(noteId => {
+    if(isBurned(noteId)){
       revealPrompt.classList.add('hidden');
       revealError.classList.remove('hidden');
+      return;
     }
+
+    revealBtn.addEventListener('click', async () => {
+      const t = dict[currentLang];
+      revealBtn.disabled = true;
+      revealBtn.textContent = t.revealing;
+
+      try {
+        const plaintext = await decryptText(hashData.ivB64, hashData.ctB64, hashData.keyB64);
+        noteText.textContent = plaintext;
+        markBurned(noteId);
+        revealPrompt.classList.add('hidden');
+        revealResult.classList.remove('hidden');
+      } catch(e){
+        revealPrompt.classList.add('hidden');
+        revealError.classList.remove('hidden');
+      }
+    });
   });
 }
 
